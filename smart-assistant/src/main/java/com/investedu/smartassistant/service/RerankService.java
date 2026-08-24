@@ -2,6 +2,7 @@ package com.investedu.smartassistant.service;
 
 import dev.langchain4j.data.segment.TextSegment;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//@Service
+@Service
+@ConditionalOnProperty(name = "rerank.enabled", havingValue = "true")
 public class RerankService {
 
     private final RestTemplate restTemplate = new RestTemplate();

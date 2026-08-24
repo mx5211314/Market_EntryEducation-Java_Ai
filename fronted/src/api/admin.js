@@ -22,3 +22,15 @@ export const updateArticle = (id, data) => request.put(`/admin/article/${id}`, d
 export const updateArticleStatus = (id, status) => request.put(`/admin/article/${id}/status`, { status })
 
 export const deleteArticle = (id) => request.delete(`/admin/article/${id}`)
+
+// 内容审核 - 投资日记
+export const getAdminDiaryList = (params) => request.get('/admin/diary/list', { params })
+export const auditDiary = (id, action, reason) => request.put(`/admin/diary/${id}/audit`, { action, reason })
+
+// 内容审核 - 问答记录
+export const getAdminChatList = (params) => request.get('/admin/chat/list', { params })
+export const auditChatMessage = (id, action, reason) => request.put(`/admin/chat/${id}/audit`, { action, reason })
+
+// 内容审核 - 模拟组合
+export const getAdminSimList = (params) => request.get('/admin/sim/list', { params })
+export const auditSimPortfolio = (id, action, reason) => request.put(`/admin/sim/${id}/audit`, { action, reason })

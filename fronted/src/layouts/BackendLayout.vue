@@ -23,6 +23,10 @@
             <el-icon><Document /></el-icon>
             <span>文章管理</span>
           </el-menu-item>
+          <el-menu-item index="/admin/content-audit">
+            <el-icon><ChatDotRound /></el-icon>
+            <span>内容审核</span>
+          </el-menu-item>
         </el-menu>
         <div class="aside-foot" @click="router.push('/')">
           <el-icon><Back /></el-icon>
@@ -67,7 +71,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
-import { Monitor, DataLine, User, Document, Back, ArrowDown } from '@element-plus/icons-vue'
+import { Monitor, DataLine, User, Document, Back, ArrowDown, ChatDotRound, Briefcase } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -76,7 +80,8 @@ const nickname = ref('管理员')
 const SUBTITLES = {
   '/admin/dashboard': '平台整体运营数据',
   '/admin/users': '账号、角色与状态维护',
-  '/admin/articles': '知识库内容的创建与上下架'
+  '/admin/articles': '知识库内容的创建与上下架',
+  '/admin/content-audit': '投资日记、问答记录、模拟组合审核'
 }
 const subtitle = computed(() => SUBTITLES[route.path] || '')
 

@@ -2,6 +2,8 @@ package com.investedu.smartassistant.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.investedu.smartassistant.agent.InvestmentAgent;
+import com.investedu.smartassistant.agent.InvestmentAgentGraph;
+import com.investedu.smartassistant.agent.GraphState;
 import com.investedu.smartassistant.entity.ChatMessage;
 import com.investedu.smartassistant.entity.ChatSession;
 import com.investedu.smartassistant.entity.RiskAssessment;
@@ -42,6 +44,9 @@ public class ChatController {
 
     @Autowired
     private InvestmentAgent investmentAgent;
+
+    @Autowired
+    private InvestmentAgentGraph investmentAgentGraph;
 
     @Autowired
     private QueryRewriter queryRewriter;
@@ -303,6 +308,47 @@ public class ChatController {
         }
         String report = investmentAgent.run(userInput);
         return Map.of("guidance", report);
+    }
+
+    /**
+     * 状态图 Agent 接口：意图分类 → 风测/检索/模拟 → 合规生成 → 校验重试
+     */
+    @PostMapping("/agent/graph")
+    public Map<String, Object> agentGraph(@RequestBody Map<String, Object> request) {
+        String userInput = (String) request.get("message");
+        if (userInput == null || userInput.trim().length() < 2) {
+            return Map.of("reply", "请输入完整的问题。");
+        }
+
+        Long userId = authContext.requireUserId();
+        String sessionId = (String) request.getOrDefault("sessionId", "");
+
+        Map<String, Object> extraContext = new HashMap<>();
+        if (request.containsKey("holdings")) extraContext.put("holdings", request.get("holdings"));
+        if (request.containsKey("amount")) extraContext.put("amount", request.get("amount"));
+
+        GraphState result = investmentAgentGraph.invoke(userId, sessionId, userInput, extraContext);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("reply", result.getFinalAnswer());
+        response.put("intent", result.getIntent());
+        if (result.getRiskAssessment() != null) {
+            response.put("riskLevel", result.getRiskAssessment().getLevelCode());
+        }
+        if (result.getSimulation() != null) {
+            response.put("simulation", Map.of(
+                    "suitable", result.getSimulation().isSuitable(),
+                    "riskScore", result.getSimulation().getRiskScore(),
+                    "expectedReturn", result.getSimulation().getExpectedReturn()
+            ));
+        }
+        if (result.getSources() != null && !result.getSources().isEmpty()) {
+            response.put("sources", result.getSources());
+        }
+        if (result.getError() != null) {
+            response.put("error", result.getError());
+        }
+        return response;
     }
 
     // ==================== 私有辅助方法 ====================

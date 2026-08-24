@@ -79,6 +79,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- Micrometer Prometheus 导出 -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
         <!-- LangChain4j Spring Boot Starter（内含 LangSmith 支持） -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -99,6 +104,13 @@
             <artifactId>langchain4j-dashscope</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
+
+        <!-- MCP 协议支持（自行实现，不依赖 langchain4j-mcp 模块） -->
+        <!-- <dependency> -->
+        <!--     <groupId>dev.langchain4j</groupId> -->
+        <!--     <artifactId>langchain4j-mcp</artifactId> -->
+        <!--     <version>1.0.0-beta5</version> -->
+        <!-- </dependency> -->
 
         <!-- Milvus 向量数据库 -->
         <dependency>

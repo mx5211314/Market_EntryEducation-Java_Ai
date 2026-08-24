@@ -56,6 +56,10 @@ export const getKnowledgeList = (params) => {
   return publicRequest.get('/user/article/list', { params })
 }
 
+export const getStudyStats = () => {
+  return request.get('/user/study/stats')
+}
+
 export const getKnowledgeDetail = (articleId) => {
   return publicRequest.get(`/user/article/${articleId}`)
 }

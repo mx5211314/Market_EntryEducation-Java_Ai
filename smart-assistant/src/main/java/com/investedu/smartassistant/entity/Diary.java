@@ -58,4 +58,10 @@ public class Diary {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /** 审核状态：0 待审核，1 通过，2 驳回 */
+    private Integer auditStatus;
+    private String auditReason;
+    private LocalDateTime auditAt;
+    private Long auditBy;
 }

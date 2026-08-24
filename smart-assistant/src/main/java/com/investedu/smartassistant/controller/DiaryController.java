@@ -2,6 +2,7 @@ package com.investedu.smartassistant.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.investedu.smartassistant.entity.Diary;
+import com.investedu.smartassistant.service.ContentAuditService;
 import com.investedu.smartassistant.service.DiaryService;
 import com.investedu.smartassistant.util.AuthContext;
 import org.springframework.web.bind.annotation.*;
@@ -15,22 +16,49 @@ import java.util.Map;
 public class DiaryController {
 
     private final DiaryService diaryService;
+    private final ContentAuditService auditService;
     private final AuthContext authContext;
 
-    public DiaryController(DiaryService diaryService, AuthContext authContext) {
+    public DiaryController(DiaryService diaryService, ContentAuditService auditService, AuthContext authContext) {
         this.diaryService = diaryService;
+        this.auditService = auditService;
         this.authContext = authContext;
     }
 
     @PostMapping
-    public Diary create(@RequestBody Map<String, Object> body) {
-        return diaryService.create(authContext.requireUserId(), body);
+    public Map<String, Object> create(@RequestBody Map<String, Object> body) {
+        Long userId = authContext.requireUserId();
+        Diary diary = new Diary();
+        diary.setUserId(userId);
+        diaryService.applyForm(diary, body);
+
+        // 自动审核
+        ContentAuditService.AuditResult audit = auditService.preCheckDiary(diary);
+        auditService.applyAuditResult(diary, audit);
+
+        if (audit.blocked) {
+            return Map.of("success", false, "message", audit.reason, "auditStatus", audit.status);
+        }
+
+        diaryService.create(diary);
+        return Map.of("success", true, "diary", diary, "auditStatus", audit.status, "auditReason", audit.reason);
     }
 
     @PutMapping("/{id}")
-    public Diary update(@PathVariable Long id,
-                        @RequestBody Map<String, Object> body) {
-        return diaryService.update(id, authContext.requireUserId(), body);
+    public Map<String, Object> update(@PathVariable Long id,
+                                      @RequestBody Map<String, Object> body) {
+        Long userId = authContext.requireUserId();
+        Diary diary = diaryService.update(id, userId, body);
+
+        // 更新后重新审核
+        ContentAuditService.AuditResult audit = auditService.preCheckDiary(diary);
+        auditService.applyAuditResult(diary, audit);
+        diaryService.update(id, userId, Map.of()); // 触发更新审核字段
+
+        if (audit.blocked) {
+            return Map.of("success", false, "message", audit.reason, "auditStatus", audit.status);
+        }
+        return Map.of("success", true, "diary", diary, "auditStatus", audit.status);
     }
 
     @DeleteMapping("/{id}")
@@ -45,7 +73,6 @@ public class DiaryController {
         return diaryService.pageByUser(authContext.requireUserId(), pageNum, Math.min(pageSize, 50));
     }
 
-    /** 到期未回顾的记录 */
     @GetMapping("/pending")
     public List<Diary> pending() {
         return diaryService.pendingReviews(authContext.requireUserId());
@@ -56,17 +83,11 @@ public class DiaryController {
         return diaryService.getStats(authContext.requireUserId());
     }
 
-    /** 详情连同纪律分构成一起给，页面才能说清这个分是怎么算出来的 */
     @GetMapping("/{id}")
     public Map<String, Object> detail(@PathVariable Long id) {
-        Diary diary = diaryService.require(id, authContext.requireUserId());
-        Map<String, Object> res = new HashMap<>();
-        res.put("diary", diary);
-        res.put("disciplineItems", diaryService.disciplineItems(diary));
-        return res;
+        return diaryService.detail(authContext.requireUserId(), id);
     }
 
-    /** 到期对账：条件触发了吗、你照做了吗 */
     @PostMapping("/{id}/review")
     public Diary review(@PathVariable Long id,
                         @RequestBody Map<String, Object> body) {
@@ -77,13 +98,11 @@ public class DiaryController {
         return diaryService.review(id, authContext.requireUserId(), triggered, executed, resultTag, note);
     }
 
-    /** AI 复盘教练 */
     @PostMapping("/{id}/coach")
     public Map<String, String> coach(@PathVariable Long id) {
         return Map.of("review", diaryService.coach(id, authContext.requireUserId()));
     }
 
-    /** 表单可选的理由标签由后端给，避免前后端两份清单对不上 */
     @GetMapping("/options")
     public Map<String, Object> options() {
         return Map.of("reasonTags", DiaryService.REASON_TAGS);

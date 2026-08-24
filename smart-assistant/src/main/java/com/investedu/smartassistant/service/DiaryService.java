@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Objects;
 
 /**
  * 投资日记：把「记心情」改成「记决策 + 到期对账」。
@@ -47,6 +48,10 @@ public class DiaryService {
         applyForm(diary, body);
         diaryMapper.insert(diary);
         return diary;
+    }
+
+    public void create(Diary diary) {
+        diaryMapper.insert(diary);
     }
 
     public Diary update(Long id, Long userId, Map<String, Object> body) {
@@ -174,7 +179,7 @@ public class DiaryService {
     }
 
     /** 表单落到实体：用户自己选的方向和情绪优先，AI 只在没填时兜底，不再覆盖用户的选择 */
-    private void applyForm(Diary d, Map<String, Object> body) {
+    public void applyForm(Diary d, Map<String, Object> body) {
         d.setTitle(str(body, "title"));
         d.setContent(str(body, "content"));
         d.setRecordType("full".equals(str(body, "recordType")) ? "full" : "quick");
@@ -198,6 +203,52 @@ public class DiaryService {
         }
         d.setDisciplineScore(scoreOf(disciplineItems(d)));
         d.setBiasTags(detectBias(d));
+    }
+
+    /** 仅更新审核字段（自动审核后回写） */
+    public void updateAuditFields(Long id, Long userId, Integer auditStatus, String auditReason, LocalDateTime auditAt) {
+        Diary diary = require(id, userId);
+        diary.setAuditStatus(auditStatus);
+        diary.setAuditReason(auditReason);
+        diary.setAuditAt(auditAt);
+        diary.setUpdatedAt(LocalDateTime.now());
+        diaryMapper.updateById(diary);
+    }
+
+    /** 获取单条详情（含归属校验） */
+    public Map<String, Object> detail(Long userId, Long id) {
+        Diary d = require(id, userId);
+        Map<String, Object> m = new HashMap<>();
+        m.put("id", d.getId());
+        m.put("userId", d.getUserId());
+        m.put("title", d.getTitle());
+        m.put("content", d.getContent());
+        m.put("recordType", d.getRecordType());
+        m.put("symbol", d.getSymbol());
+        m.put("direction", d.getDirection());
+        m.put("positionRatio", d.getPositionRatio());
+        m.put("reasonTags", d.getReasonTags());
+        m.put("expectHoldDays", d.getExpectHoldDays());
+        m.put("sellPlan", d.getSellPlan());
+        m.put("mood", d.getMood());
+        m.put("moodScore", d.getMoodScore());
+        m.put("sentiment", d.getSentiment());
+        m.put("disciplineScore", d.getDisciplineScore());
+        m.put("biasTags", d.getBiasTags());
+        m.put("aiReview", d.getAiReview());
+        m.put("reviewDueAt", d.getReviewDueAt());
+        m.put("reviewedAt", d.getReviewedAt());
+        m.put("reviewTriggered", d.getReviewTriggered());
+        m.put("reviewExecuted", d.getReviewExecuted());
+        m.put("resultTag", d.getResultTag());
+        m.put("reviewNote", d.getReviewNote());
+        m.put("auditStatus", d.getAuditStatus());
+        m.put("auditReason", d.getAuditReason());
+        m.put("auditAt", d.getAuditAt());
+        m.put("auditBy", d.getAuditBy());
+        m.put("createdAt", d.getCreatedAt());
+        m.put("updatedAt", d.getUpdatedAt());
+        return m;
     }
 
     /** 情绪由用户自己打分决定，比让大模型猜内容更准、也省一次调用；没打分才回落到 AI */

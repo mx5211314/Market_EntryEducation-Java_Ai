@@ -22,6 +22,7 @@ const ProfileView = () => import('../views/ProfileView.vue')
 const DashboardView = () => import('../views/DashboardView.vue')
 const AdminUserView = () => import('../views/AdminUserView.vue')
 const AdminArticleView = () => import('../views/AdminArticleView.vue')
+const AdminContentAuditView = () => import('../views/AdminContentAuditView.vue')
 
 const routes = [
   {
@@ -56,6 +57,7 @@ const routes = [
       { path: 'dashboard', component: DashboardView, meta: { title: '数据看板' } },
       { path: 'users', component: AdminUserView, meta: { title: '用户管理' } },
       { path: 'articles', component: AdminArticleView, meta: { title: '文章管理' } },
+      { path: 'content-audit', component: AdminContentAuditView, meta: { title: '内容审核' } },
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/' }
